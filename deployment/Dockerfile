@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc build-essential && rm -rf /var/lib/apt/lists/*
-COPY src/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Final Stage (Multi-stage build & non-root user)
@@ -19,7 +19,7 @@ RUN addgroup --system appgroup && adduser --system --group appuser
 
 COPY --from=builder /install /usr/local
 
-# Copiamos tanto deployment como src ANTES de definir el usuario y el CMD
+# Copiamos tanto deployment como src
 COPY deployment /app/deployment
 COPY src /app/src
 
@@ -30,5 +30,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Comando por defecto (sobrescrito por docker-compose si aplica)
-CMD ["gunicorn", "-c", "deployment/gunicorn_config.py", "src.main:app"]
+# Comando por defecto (apunta a app.main:app porque PYTHONPATH=/app/src)
+CMD ["gunicorn", "-c", "deployment/gunicorn_config.py", "app.main:app"]
