@@ -1,0 +1,117 @@
+name: CI/CD Pipeline - SecureFlow Dashboard
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  # ETAPA 1: Tests Unitarios, Integración y Cobertura
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+
+      - name: Ejecutar pruebas con Pytest y reporte de Cobertura
+        run: |
+          pytest --cov=src/app --cov-report=term-missing --cov-report=xml src/tests/
+
+  # ETAPA 2: Análisis Estático de Seguridad (SAST con Bandit)
+  sast:
+    name: Security Scan (SAST)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar Bandit
+        run: pip install bandit
+
+      - name: Ejecutar escaneo Bandit
+        run: bandit -r src/app -f txt
+
+  # ETAPA 3: Construcción y Push de Imagen Docker
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, sast]
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configurar etiqueta (Tag)
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Construir Imagen Docker (Multi-stage)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: false
+          tags: |
+            secureflow-web:latest
+            secureflow-web:${{ steps.vars.outputs.sha_short }}
+
+  # ETAPA 4: Despliegue en Staging y Rollback Automático
+  deploy-staging:
+    name: Deploy to Staging & Healthcheck
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Desplegar en Entorno de Staging (Docker Compose)
+        run: |
+          cd deployment
+          docker compose up -d --build
+
+      - name: Verificación de Salud (Healthcheck Verification)
+        id: healthcheck
+        run: |
+          sleep 5
+          python verify_deployment.py
+
+      - name: Mecanismo de Rollback Automático ante Fallos
+        if: failure() && steps.healthcheck.outcome == 'failure'
+        run: |
+          echo "::error::Falló la verificación en Staging. Ejecutando Rollback..."
+          cd deployment
+          docker compose down
+          docker compose up -d --no-build
+          echo "Rollback ejecutado con éxito a la versión previa estable."
+
+  # ETAPA 5: Notificación de Estado
+  notify:
+    name: Pipeline Notifications
+    runs-on: ubuntu-latest
+    needs: [test, sast, build-and-push, deploy-staging]
+    if: always()
+    steps:
+      - name: Notificación de Resultado
+        run: |
+          echo "El estado final del pipeline fue: ${{ needs.deploy-staging.result }}"
