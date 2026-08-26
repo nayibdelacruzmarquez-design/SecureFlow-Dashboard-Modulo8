@@ -1,1 +1,22 @@
-*** 
+# Entornos virtuales y caché de Python
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest y Cobertura
+.pytest_cache/
+.coverage
+coverage.xml
+
+# Git e IDEs
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Archivos temporales y logs
+*.log
+.DS_Store
