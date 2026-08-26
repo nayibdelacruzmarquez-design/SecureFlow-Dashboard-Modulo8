@@ -18,7 +18,7 @@ def test_api_endpoints_param(client, endpoint, expected_status):
 
 # 2. Test Unitario utilizando Mocks / Stubs
 def test_health_with_mock(client):
-    with patch("app.logging_config.datetime") as mock_datetime:
+    with patch("datetime.datetime") as mock_datetime:
         mock_datetime.now.return_value.isoformat.return_value = (
             "2026-08-25T00:00:00Z"
         )
