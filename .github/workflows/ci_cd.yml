@@ -30,8 +30,9 @@ jobs:
       - name: Ejecutar pruebas con Pytest y reporte de Cobertura
         env:
           PYTHONPATH: src
+          GEVENT_NO_MONKEY: "1"
         run: |
-          pytest --timeout=30 --cov=src/app --cov-report=term-missing --cov-report=xml src/tests/
+          pytest --ignore=src/tests/load_test.py --ignore=src/tests/performance/load_test.py --timeout=30 --cov=src/app --cov-report=term-missing --cov-report=xml src/tests/
 
   # ETAPA 2: Análisis Estático de Seguridad (SAST con Bandit)
   sast:
