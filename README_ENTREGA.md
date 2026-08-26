@@ -3,6 +3,11 @@
 Bienvenido al repositorio central de **SecureFlow Dashboard**, una plataforma orientada a la arquitectura segura, monitoreo de métricas en tiempo real y alta disponibilidad mediante servicios containerizados.
 
 ---
+##  Demo en Video de la Solución Integrada
+
+A continuación se adjunta el enlace de la demostración en video cubriendo el despliegue funcional, la arquitectura Nginx/Docker, gestión de secretos, auditoría de seguridad OWASP, observabilidad (Prometheus/Grafana) y estrategias de DevSecOps/Rollback:
+
+**Enlace al video:** [https://drive.google.com/file/d/1FUyEcm6VfUjhddXclXY9BGgepBSyKZrN/view?usp=drive_link]
 
 ## Arquitectura del Sistema
 
